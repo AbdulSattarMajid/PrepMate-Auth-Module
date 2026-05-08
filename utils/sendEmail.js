@@ -1,26 +1,30 @@
-const { Resend } = require('resend');
-
-// Initialize Resend with your API Key
-const resend = new Resend(process.env.RESEND_API_KEY);
+const axios = require('axios');
 
 const sendEmail = async (options) => {
   try {
-    const data = await resend.emails.send({
-      from: 'PrepMate <onboarding@resend.dev>', // Default free sender
-      to: options.email,
+    // Pulling both from .env for maximum security and flexibility
+    const apiKey = process.env.BREVO_API_KEY;
+    const senderEmail = process.env.EMAIL_USER; 
+
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { 
+        name: "PrepMate Team", 
+        email: senderEmail 
+      },
+      to: [{ email: options.email }],
       subject: options.subject,
-      text: options.message,
+      textContent: options.message,
+    }, {
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+      }
     });
 
-    if (data.error) {
-      console.error("RESEND ERROR:", data.error);
-      throw new Error(data.error.message);
-    }
-
-    console.log("Email sent successfully via Resend:", data.data.id);
+    console.log("SUCCESS: Email sent via Brevo API using .env config");
   } catch (error) {
-    console.error("EMAIL UTILITY ERROR:", error);
-    throw error; // Re-throw to be caught by the Controller
+    console.error("BREVO ERROR:", error.response ? error.response.data : error.message);
+    throw new Error("Email delivery failed.");
   }
 };
 
