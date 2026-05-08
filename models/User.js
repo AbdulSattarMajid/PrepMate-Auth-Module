@@ -4,25 +4,36 @@ const bcrypt = require("bcryptjs");
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: false }, // Change required to false for Google users
-  googleId: { type: String }, // Add this field
+  password: { type: String, required: false }, 
+  googleId: { type: String }, 
   role: { type: String, default: "user" },
+  
+  // --- OTP & VERIFICATION UPGRADE ---
+  isVerified: { 
+    type: Boolean, 
+    default: false 
+  },
+  otp: { 
+    type: String 
+  },
+  otpExpires: { 
+    type: Date 
+  },
+  // ----------------------------------
+
 }, { timestamps: true });
 
-// --- THE FIX IS HERE ---
-// 1. Remove 'next' from the arguments
+// Password hashing logic
 userSchema.pre("save", async function () {
-  // 2. Only hash if the password is new or changed
-  if (!this.isModified("password")) return;
+  if (!this.isModified("password") || !this.password) return;
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  
-  // 3. DO NOT CALL next() here when using an async function
 });
 
-// Method to compare passwords during login
+// Method to compare passwords
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) return false; // Handle Google users with no password
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
