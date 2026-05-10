@@ -27,6 +27,8 @@ const sendTokenResponse = (user, statusCode, res, message) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
+        profilePicture: user.profilePicture,
+        points: user.points,
       },
     });
 };

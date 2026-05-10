@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const forumRoutes = require("./routes/forumRoutes");
 const passport = require("passport");
 const cors = require("cors");
 const errorHandler = require("./middlewares/errorMiddleware");
@@ -30,7 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 // 3. CORS Configuration: Allows your friend's frontend to connect securely
 app.use(cors({
   // In production (Render), set FRONTEND_URL to your friend's hosted URL
-  origin: process.env.FRONTEND_URL || "http://localhost:3000", 
+  origin: process.env.FRONTEND_URL || "http://localhost:5173", 
   credentials: true 
 }));
 
@@ -41,7 +42,7 @@ app.use(passport.initialize());
 
 // Mount Authentication Routes
 app.use("/api/auth", authRoutes);
-
+app.use("/api/forum/posts", forumRoutes);
 // API Health Check: Replaces the deleted home/test views
 app.get("/", (req, res) => {
   res.json({ 

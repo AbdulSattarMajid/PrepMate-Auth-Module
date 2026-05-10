@@ -8,6 +8,17 @@ const userSchema = new mongoose.Schema({
   googleId: { type: String }, 
   role: { type: String, default: "user" },
   
+  // --- IDENTITY & COMMUNITY EXTENSION ---
+  profilePicture: { 
+    type: String, 
+    default: "" 
+  },
+  points: { 
+    type: Number, 
+    default: 0 
+  },
+  // --------------------------------------
+
   // --- OTP & VERIFICATION UPGRADE ---
   isVerified: { 
     type: Boolean, 
@@ -33,7 +44,7 @@ userSchema.pre("save", async function () {
 
 // Method to compare passwords
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  if (!this.password) return false; // Handle Google users with no password
+  if (!this.password) return false; 
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
