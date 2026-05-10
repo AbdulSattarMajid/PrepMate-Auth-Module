@@ -6,8 +6,11 @@ const {
   getPosts, 
   toggleUpvote, 
   getLeaderboard,
-  addComment,     // --- NEW ---
-  getComments     // --- NEW ---
+  addComment,    
+  getComments,
+  updatePost,    
+  deletePost,   
+  deleteComment    
 } = require("../controllers/forumController");
 
 const  protect  = require("../middlewares/authMiddleware"); 
@@ -17,6 +20,9 @@ router.route("/")
   .get(getPosts)
   .post(protect, createPost);
 
+  router.route("/:id")
+  .put(protect, updatePost)    // Edit a post
+  .delete(protect, deletePost); // Delete a post
 // Public: Get top contributors
 router.get("/leaderboard", getLeaderboard);
 
@@ -29,4 +35,5 @@ router.route("/:id/comments")
   .get(getComments)
   .post(protect, addComment);
 
+router.delete("/comments/:commentId", protect, deleteComment);
 module.exports = router;

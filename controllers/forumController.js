@@ -137,3 +137,70 @@ exports.getComments = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Update a post
+// @route   PUT /api/forum/posts/:id
+// @access  Private
+exports.updatePost = async (req, res) => {
+  try {
+    let post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ success: false, message: "Post not found" });
+
+    // Ensure the person trying to update it actually wrote it!
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ success: false, message: "Not authorized to edit this post" });
+    }
+
+    post = await Post.findByIdAndUpdate(req.params.id, req.body, {
+      new: true, // Returns the newly updated post
+      runValidators: true // Ensures they don't bypass schema rules
+    });
+
+    res.status(200).json({ success: true, data: post });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete a post
+// @route   DELETE /api/forum/posts/:id
+// @access  Private
+exports.deletePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ success: false, message: "Post not found" });
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ success: false, message: "Not authorized to delete this post" });
+    }
+
+    await post.deleteOne(); // Removes the post from the database
+    res.status(200).json({ success: true, message: "Post deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete a comment
+// @route   DELETE /api/forum/comments/:commentId
+// @access  Private
+exports.deleteComment = async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId);
+    if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
+
+    if (comment.author.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ success: false, message: "Not authorized to delete this comment" });
+    }
+
+    const postId = comment.post; // Save the post ID before we delete the comment
+    await comment.deleteOne();
+
+    // Decrease the commentCount on the actual Post
+    await Post.findByIdAndUpdate(postId, { $inc: { commentCount: -1 } });
+
+    res.status(200).json({ success: true, message: "Comment deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
