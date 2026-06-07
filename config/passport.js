@@ -7,8 +7,8 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      // Use a relative path or env variable for callback to make deployment easier later
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback",
+      // Updated to fallback directly to your live Render URL
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || "https://prepmate-auth-module.onrender.com/api/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -29,9 +29,8 @@ passport.use(
               name: profile.displayName,
               email: profile.emails[0].value,
               googleId: profile.id,
-              // We set a dummy password or leave it blank if your model allows
-              // If your model REQUIRES a password, add a random string here
               password: Math.random().toString(36).slice(-12), 
+              isVerified: true // Important: Bypass OTP since Google already verified them
             });
           }
         }

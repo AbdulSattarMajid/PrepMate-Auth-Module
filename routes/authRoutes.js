@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 
-// 1. Added verifyOTP to the imports
 const { register, login, getProfile, logout, verifyOTP,forgotPassword, resetPassword } = require("../controllers/authController");
 const protect = require("../middlewares/authMiddleware");
 const generateToken = require("../utils/generateToken");
@@ -32,7 +31,6 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: "/login" }),
   (req, res) => {
-    // Note: Google users should already be set to isVerified: true in your passport strategy
     const token = generateToken(req.user._id);
 
     const cookieOptions = {
@@ -44,8 +42,15 @@ router.get(
 
     res.cookie("token", token, cookieOptions);
     
-    const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173/dashboard";
-    res.redirect(frontendURL);
+    // Grab the base URL, default to localhost for development
+    let frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+    
+    // Safely append /dashboard and the token to the URL so React can catch it
+    const redirectUrl = frontendURL.endsWith('/dashboard') 
+      ? `${frontendURL}?token=${token}` 
+      : `${frontendURL}/dashboard?token=${token}`;
+
+    res.redirect(redirectUrl);
   }
 );
 
