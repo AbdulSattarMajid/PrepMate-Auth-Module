@@ -4,36 +4,42 @@ const router = express.Router();
 const { 
   createPost, 
   getPosts, 
+  getSinglePost,
+  updatePost,    
+  deletePost,   
   toggleUpvote, 
+  toggleSavePost,
   getLeaderboard,
   addComment,    
   getComments,
-  updatePost,    
-  deletePost,   
   deleteComment    
 } = require("../controllers/forumController");
 
-const  protect  = require("../middlewares/authMiddleware"); 
+const protect = require("../middlewares/authMiddleware"); 
 
-// Public: Get all posts | Private: Create a post
+// Core Feed Endpoints
 router.route("/")
   .get(getPosts)
   .post(protect, createPost);
 
-  router.route("/:id")
-  .put(protect, updatePost)    // Edit a post
-  .delete(protect, deletePost); // Delete a post
-// Public: Get top contributors
+// Gamified Stats
 router.get("/leaderboard", getLeaderboard);
 
-// Private: Toggle upvote
-router.put("/:id/upvote", protect, toggleUpvote);
+// Dynamic Single Post Target Endpoints
+router.route("/:id")
+  .get(getSinglePost)
+  .put(protect, updatePost)
+  .delete(protect, deletePost);
 
-// --- NEW COMMENT ROUTES ---
-// Public: Get comments | Private: Add a comment
+// Intermediary Interaction Handles
+router.put("/:id/upvote", protect, toggleUpvote);
+router.put("/:id/save", protect, toggleSavePost);
+
+// Comment Extensions
 router.route("/:id/comments")
   .get(getComments)
   .post(protect, addComment);
 
 router.delete("/comments/:commentId", protect, deleteComment);
+
 module.exports = router;

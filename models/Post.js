@@ -14,7 +14,7 @@ const postSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, "Please specify a category"],
-    enum: ["Interview Experiences", "Resume Review", "Salary & Offer", "General Advice"]
+    enum: ["Interview Experiences", "Resume Review", "Salary & Offer", "General Advice", "Question"]
   },
   tags: [{
     type: String
@@ -31,6 +31,18 @@ const postSchema = new mongoose.Schema({
   commentCount: {
     type: Number,
     default: 0
+  },
+  views: {
+    type: Number,
+    default: 0
+  },
+  pinned: {
+    type: Boolean,
+    default: false
+  },
+  isAnonymous: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

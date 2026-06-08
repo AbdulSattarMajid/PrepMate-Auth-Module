@@ -6,7 +6,13 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: false }, 
   googleId: { type: String }, 
-  role: { type: String, default: "user" },
+  
+  // --- UPDATED ROLE FIELD ---
+  role: { 
+    type: String, 
+    enum: ["user", "admin", "hr", "recruiter", "interviewer"],
+    default: "user" 
+  },
   
   // --- IDENTITY & COMMUNITY EXTENSION ---
   profilePicture: { 
@@ -17,6 +23,10 @@ const userSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   },
+  savedPosts: [{
+    type: mongoose.Schema.ObjectId,
+    ref: "Post"
+  }],
   // --------------------------------------
 
   // --- OTP & VERIFICATION UPGRADE ---
