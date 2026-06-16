@@ -1,3 +1,4 @@
+require('dotenv').config(); // 🌟 ADDED: Forces the variables to load immediately!
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
@@ -11,9 +12,9 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'prepmate_avatars', // The folder name in your Cloudinary account
-    allowed_formats: ['jpg', 'png', 'jpeg'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }] // Compresses large images!
+    folder: 'prepmate_avatars', 
+    allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'webp'], // 🌟 Added gif and webp just in case!
+    transformation: [{ width: 500, height: 500, crop: 'limit' }] 
   },
 });
 
