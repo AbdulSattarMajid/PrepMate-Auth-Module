@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 
+// 🌟 Added the User model import so the Admin routes can search the database
+const User = require("../models/User"); 
+
 const { 
   register, 
   login, 
@@ -10,13 +13,12 @@ const {
   verifyOTP,
   forgotPassword, 
   resetPassword,
-  updateProfile // 🌟 1. We added the updateProfile controller here
+  updateProfile 
 } = require("../controllers/authController");
 
 const protect = require("../middlewares/authMiddleware");
 const generateToken = require("../utils/generateToken");
 
-// 🌟 2. We imported the Cloudinary upload middleware here
 const { upload } = require("../config/cloudinary"); 
 
 // --- Standard Auth Routes ---
@@ -26,12 +28,55 @@ router.post("/verify-otp", verifyOTP);
 router.get("/logout", logout);
 router.get("/profile", protect, getProfile);
 
-// 🌟 3. THE MISSING ROUTE: This catches the image and sends it to Cloudinary
+// Catch image and send to Cloudinary
 router.put("/profile", protect, upload.single("avatar"), updateProfile);
 
 // --- Password Reset Routes ---
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+
+// 🌟 --- ADMIN ROUTES --- 🌟
+
+// GET /api/auth/users - Fetch all users (Admin Only)
+router.get("/users", protect, async (req, res) => {
+  try {
+    // 1. Security Check: Ensure the person asking is an admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Access denied. Admins only.' });
+    }
+
+    // 2. Fetch all users, sorted newest first, excluding passwords
+    const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+    
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching users' });
+  }
+});
+
+// DELETE /api/auth/users/:id - Delete a specific user (Admin Only)
+router.delete("/users/:id", protect, async (req, res) => {
+  try {
+    // 1. Security Check
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Access denied. Admins only.' });
+    }
+
+    // 2. Prevent the admin from deleting their own account accidentally
+    if (req.user._id.toString() === req.params.id) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own admin account.' });
+    }
+
+    // 3. Delete the user
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ success: false, message: 'Server error while deleting user' });
+  }
+});
+
 
 // --- Google OAuth Routes ---
 router.get(
