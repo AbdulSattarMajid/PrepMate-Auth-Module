@@ -15,11 +15,11 @@ const userSchema = new mongoose.Schema({
   },
   
   // --- IDENTITY & COMMUNITY EXTENSION ---
-  avatarUrl: { // Stores the Cloudinary string
+  avatarUrl: { 
     type: String, 
     default: "" 
   },
-  communityPoints: { // Drives the Gamification badges
+  communityPoints: { 
     type: Number, 
     default: 0 
   },
@@ -38,23 +38,18 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// 🌟 Password hashing AND Admin Auto-Assign logic
-userSchema.pre("save", async function (next) {
+// 🌟 FIXED: Removed 'next' completely. Mongoose handles async promises automatically!
+userSchema.pre("save", async function () {
   // 1. Master Admin Override
   if (this.email === "prepmate.services@gmail.com") {
     this.role = "admin";
   }
 
   // 2. Hash Password (if modified)
-  if (!this.isModified("password") || !this.password) return next();
+  if (!this.isModified("password") || !this.password) return;
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Method to compare passwords
