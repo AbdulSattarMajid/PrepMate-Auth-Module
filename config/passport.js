@@ -7,36 +7,37 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      // Updated to fallback directly to your live Render URL
       callbackURL: process.env.GOOGLE_CALLBACK_URL || "https://prepmate-auth-module.onrender.com/api/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // 1. Check if user already exists by googleId
-        let user = await User.findOne({ googleId: profile.id });
+        const googleEmail = profile.emails[0].value;
+        const googleId = profile.id;
 
-        if (!user) {
-          // 2. Check if the email exists from a manual signup
-          user = await User.findOne({ email: profile.emails[0].value });
+        // 1. Check if an account with this email ALREADY exists
+        let user = await User.findOne({ email: googleEmail });
 
-          if (user) {
-            user.googleId = profile.id;
-            // No password change here, so pre-save hook will skip hashing
+        if (user) {
+          // The user exists! Link the Google ID if they don't have one yet.
+          if (!user.googleId) {
+            user.googleId = googleId;
+            user.isVerified = true; // Google emails are already verified
             await user.save();
-          } else {
-            // 3. Create brand new user
-            user = await User.create({
-              name: profile.displayName,
-              email: profile.emails[0].value,
-              googleId: profile.id,
-              password: Math.random().toString(36).slice(-12), 
-              isVerified: true // Important: Bypass OTP since Google already verified them
-            });
           }
+        } else {
+          // 2. No account exists. Create a brand new one!
+          user = await User.create({
+            name: profile.displayName,
+            email: googleEmail,
+            googleId: googleId,
+            isVerified: true, 
+            role: "candidate" // Matches our new database model
+          });
         }
 
         return done(null, user);
       } catch (error) {
+        console.error("Google Auth Error:", error);
         return done(error, null);
       }
     }

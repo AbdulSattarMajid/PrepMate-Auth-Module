@@ -24,6 +24,19 @@ const postSchema = new mongoose.Schema({
     ref: "User",
     required: true
   },
+  
+  // --- 🌟 NEW: IMAGE UPLOADS ---
+  imageUrl: {
+    type: String, // Will store the secure Cloudinary URL
+    default: ""
+  },
+
+  // --- 🌟 NEW: ADMIN MODERATION ---
+  isFlagged: {
+    type: Boolean, // Admin can hide inappropriate posts without hard-deleting them
+    default: false
+  },
+
   upvotes: [{
     type: mongoose.Schema.ObjectId,
     ref: "User"

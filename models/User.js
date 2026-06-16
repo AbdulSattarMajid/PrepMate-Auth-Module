@@ -10,16 +10,16 @@ const userSchema = new mongoose.Schema({
   // --- UPDATED ROLE FIELD ---
   role: { 
     type: String, 
-    enum: ["user", "admin", "hr", "recruiter", "interviewer"],
-    default: "user" 
+    enum: ["candidate", "recruiter", "admin"],
+    default: "candidate" 
   },
   
   // --- IDENTITY & COMMUNITY EXTENSION ---
-  profilePicture: { 
+  avatarUrl: { // Stores the Cloudinary string
     type: String, 
     default: "" 
   },
-  points: { 
+  communityPoints: { // Drives the Gamification badges
     type: Number, 
     default: 0 
   },
@@ -27,29 +27,34 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: "Post"
   }],
-  // --------------------------------------
 
-  // --- OTP & VERIFICATION UPGRADE ---
+  // --- OTP & VERIFICATION ---
   isVerified: { 
     type: Boolean, 
     default: false 
   },
-  otp: { 
-    type: String 
-  },
-  otpExpires: { 
-    type: Date 
-  },
-  // ----------------------------------
+  otp: { type: String },
+  otpExpires: { type: Date },
 
 }, { timestamps: true });
 
-// Password hashing logic
-userSchema.pre("save", async function () {
-  if (!this.isModified("password") || !this.password) return;
+// 🌟 Password hashing AND Admin Auto-Assign logic
+userSchema.pre("save", async function (next) {
+  // 1. Master Admin Override
+  if (this.email === "prepmate.services@gmail.com") {
+    this.role = "admin";
+  }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  // 2. Hash Password (if modified)
+  if (!this.isModified("password") || !this.password) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Method to compare passwords

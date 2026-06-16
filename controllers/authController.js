@@ -27,14 +27,14 @@ const sendTokenResponse = (user, statusCode, res, message) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        profilePicture: user.profilePicture,
-        points: user.points,
+        // 🌟 UPDATED: Matching our new database schema names
+        avatarUrl: user.avatarUrl,
+        communityPoints: user.communityPoints,
+        savedPosts: user.savedPosts
       },
     });
 };
 
-// @desc    Register user (Sends OTP)
-// @route   POST /api/auth/register
 // @desc    Register user (Sends OTP & Handles unverified users)
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
@@ -179,8 +179,6 @@ exports.logout = async (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
-
-
 // @desc    Forgot Password - Send OTP
 // @route   POST /api/auth/forgot-password
 exports.forgotPassword = async (req, res) => {
@@ -189,15 +187,12 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      // Security tip: We still say "If an account exists..." to prevent email hunting
       return res.status(200).json({ success: true, message: "If an account exists with that email, a reset code has been sent." });
     }
 
-    // Generate 6-digit Reset OTP
     const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const resetOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const resetOtpExpires = Date.now() + 10 * 60 * 1000; 
 
-    // Save to user model
     user.otp = resetOtp;
     user.otpExpires = resetOtpExpires;
     await user.save();
@@ -227,7 +222,6 @@ exports.resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    // Find user with valid OTP
     const user = await User.findOne({
       email,
       otp,
@@ -238,12 +232,9 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid or expired reset code." });
     }
 
-    // Set new password
     user.password = newPassword;
-    user.otp = undefined; // Clear OTP fields
+    user.otp = undefined; 
     user.otpExpires = undefined;
-    
-    // Ensure user is verified if they weren't before
     user.isVerified = true; 
 
     await user.save();
@@ -251,5 +242,48 @@ exports.resetPassword = async (req, res) => {
     res.status(200).json({ success: true, message: "Password updated successfully! You can now login." });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// --- 🌟 NEW CLOUDINARY & PROFILE UPDATE FUNCTION ---
+
+// @desc    Update user profile & avatar
+// @route   PUT /api/auth/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Safely update text fields if the user provided them
+    if (req.body.name) user.name = req.body.name;
+    if (req.body.role) user.role = req.body.role;
+
+    // If Multer & Cloudinary processed an image, the secure URL will be living inside req.file.path
+    if (req.file) {
+      user.avatarUrl = req.file.path;
+    }
+
+    await user.save();
+
+    // Return the fresh data to React
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        communityPoints: user.communityPoints,
+        savedPosts: user.savedPosts
+      }
+    });
+
+  } catch (error) {
+    console.error("Profile Update Error:", error);
+    res.status(500).json({ success: false, message: "Server Error updating profile" });
   }
 };
