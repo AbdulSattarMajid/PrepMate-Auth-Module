@@ -17,10 +17,15 @@ const {
 
 const protect = require("../middlewares/authMiddleware"); 
 
+// 🌟 NEW: Import the same Cloudinary engine we used for profiles
+const { upload } = require("../config/cloudinary"); 
+
 // Core Feed Endpoints
 router.route("/")
   .get(getPosts)
-  .post(protect, createPost);
+  // 🌟 UPDATE: Inject 'upload.single("image")' here. 
+  // The frontend needs to use the key "image" when sending FormData.
+  .post(protect, upload.single("image"), createPost);
 
 // Gamified Stats
 router.get("/leaderboard", getLeaderboard);

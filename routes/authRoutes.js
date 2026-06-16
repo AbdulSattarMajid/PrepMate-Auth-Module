@@ -9,11 +9,15 @@ const {
   logout, 
   verifyOTP,
   forgotPassword, 
-  resetPassword 
+  resetPassword,
+  updateProfile // 🌟 1. We added the updateProfile controller here
 } = require("../controllers/authController");
 
 const protect = require("../middlewares/authMiddleware");
 const generateToken = require("../utils/generateToken");
+
+// 🌟 2. We imported the Cloudinary upload middleware here
+const { upload } = require("../config/cloudinary"); 
 
 // --- Standard Auth Routes ---
 router.post("/register", register);
@@ -21,6 +25,9 @@ router.post("/login", login);
 router.post("/verify-otp", verifyOTP); 
 router.get("/logout", logout);
 router.get("/profile", protect, getProfile);
+
+// 🌟 3. THE MISSING ROUTE: This catches the image and sends it to Cloudinary
+router.put("/profile", protect, upload.single("avatar"), updateProfile);
 
 // --- Password Reset Routes ---
 router.post("/forgot-password", forgotPassword);

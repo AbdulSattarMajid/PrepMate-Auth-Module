@@ -8,12 +8,14 @@ const Comment = require("../models/Comment");
 exports.createPost = async (req, res) => {
   try {
     req.body.author = req.user._id;
+
+    if (req.file) {
+      req.body.imageUrl = req.file.path;
+    }
+
     const post = await Post.create(req.body);
     
-    // --- THE FIX ---
-    // This tells MongoDB to grab your user profile and attach it to the post 
-    // BEFORE sending it back to React, so your name appears instantly!
-    await post.populate("author", "name profilePicture role");
+    await post.populate("author", "name avatarUrl role");
     
     res.status(201).json({ success: true, data: post });
   } catch (error) {
