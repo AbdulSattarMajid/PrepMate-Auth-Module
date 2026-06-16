@@ -7,7 +7,7 @@ const forumRoutes = require("./routes/forumRoutes");
 const passport = require("passport");
 const cors = require("cors");
 const errorHandler = require("./middlewares/errorMiddleware");
-
+const paymentRoutes = require('./routes/paymentRoutes');
 // Load environment variables
 dotenv.config();
 
@@ -43,6 +43,7 @@ app.use(passport.initialize());
 // Mount Authentication Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/forum/posts", forumRoutes);
+app.use("/api/payments", paymentRoutes);
 // API Health Check: Replaces the deleted home/test views
 app.get("/", (req, res) => {
   res.json({ 
