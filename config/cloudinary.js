@@ -1,20 +1,20 @@
-require('dotenv').config(); // 🌟 ADDED: Forces the variables to load immediately!
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
+// 🚨 TEMPORARY HARDCODE TEST 🚨
+// We are bypassing process.env completely to see if Render is the liar.
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: 'dlhaf1209',
+  api_key: '929555886865578',
+  api_secret: 'K026hMXNEEGF_RCMNSTMBh5EQIU',
 });
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'prepmate_avatars', 
-    allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'webp'], // 🌟 Added gif and webp just in case!
-    transformation: [{ width: 500, height: 500, crop: 'limit' }] 
+    allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'webp'],
   },
 });
 
