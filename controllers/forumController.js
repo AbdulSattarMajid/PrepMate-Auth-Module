@@ -110,7 +110,7 @@ exports.updatePost = async (req, res) => {
     let post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, message: "Post not found" });
 
-    // 🌟 UPDATED: Let Admins edit posts too (to fix bad titles or remove bad content)
+    // Check permissions (Author OR Admin)
     const isAuthor = post.author.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin';
 
@@ -118,10 +118,16 @@ exports.updatePost = async (req, res) => {
       return res.status(401).json({ success: false, message: "Not authorized to edit this post" });
     }
 
+    // 🌟 NEW: If a new image was uploaded during the edit, catch the Cloudinary URL
+    if (req.file) {
+      req.body.imageUrl = req.file.path;
+    }
+
+    // Update the post and re-populate the author data so the frontend card doesn't break
     post = await Post.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
-    });
+    }).populate("author", "name avatarUrl role");
 
     res.status(200).json({ success: true, data: post });
   } catch (error) {

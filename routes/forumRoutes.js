@@ -17,14 +17,12 @@ const {
 
 const protect = require("../middlewares/authMiddleware"); 
 
-// 🌟 NEW: Import the same Cloudinary engine we used for profiles
+// 🌟 Import the Cloudinary engine
 const { upload } = require("../config/cloudinary"); 
 
 // Core Feed Endpoints
 router.route("/")
   .get(getPosts)
-  // 🌟 UPDATE: Inject 'upload.single("image")' here. 
-  // The frontend needs to use the key "image" when sending FormData.
   .post(protect, upload.single("image"), createPost);
 
 // Gamified Stats
@@ -33,7 +31,8 @@ router.get("/leaderboard", getLeaderboard);
 // Dynamic Single Post Target Endpoints
 router.route("/:id")
   .get(getSinglePost)
-  .put(protect, updatePost)
+  // 🌟 THE FIX: Injected upload.single("image") so edits can process FormData
+  .put(protect, upload.single("image"), updatePost)
   .delete(protect, deletePost);
 
 // Intermediary Interaction Handles
