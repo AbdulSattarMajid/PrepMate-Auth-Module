@@ -110,7 +110,11 @@ exports.updatePost = async (req, res) => {
     let post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, message: "Post not found" });
 
-    if (post.author.toString() !== req.user._id.toString()) {
+    // 🌟 UPDATED: Let Admins edit posts too (to fix bad titles or remove bad content)
+    const isAuthor = post.author.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isAuthor && !isAdmin) {
       return res.status(401).json({ success: false, message: "Not authorized to edit this post" });
     }
 
@@ -133,7 +137,11 @@ exports.deletePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, message: "Post not found" });
 
-    if (post.author.toString() !== req.user._id.toString()) {
+    // 🌟 THE FIX: Allow the author OR an admin to delete it
+    const isAuthor = post.author.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isAuthor && !isAdmin) {
       return res.status(401).json({ success: false, message: "Not authorized to delete this post" });
     }
 
@@ -261,7 +269,11 @@ exports.deleteComment = async (req, res) => {
     const comment = await Comment.findById(req.params.commentId);
     if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
 
-    if (comment.author.toString() !== req.user._id.toString()) {
+    // 🌟 THE FIX: Allow the author OR an admin to delete it
+    const isAuthor = comment.author.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isAuthor && !isAdmin) {
       return res.status(401).json({ success: false, message: "Not authorized to delete this comment" });
     }
 
