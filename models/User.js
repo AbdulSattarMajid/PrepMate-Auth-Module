@@ -7,19 +7,17 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: false }, 
   googleId: { type: String }, 
   
-  // --- UPDATED ROLE FIELD ---
   role: { 
     type: String, 
     enum: ["candidate", "recruiter", "admin"],
     default: "candidate" 
   },
   
-  // --- IDENTITY & COMMUNITY EXTENSION ---
   avatarUrl: { 
     type: String, 
     default: "" 
   },
-  communityPoints: { 
+  points: { 
     type: Number, 
     default: 0 
   },
@@ -38,7 +36,6 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// 🌟 FIXED: Removed 'next' completely. Mongoose handles async promises automatically!
 userSchema.pre("save", async function () {
   // 1. Master Admin Override
   if (this.email === "prepmate.services@gmail.com") {
