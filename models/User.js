@@ -13,6 +13,13 @@ const userSchema = new mongoose.Schema({
     default: "candidate" 
   },
   
+  // 🌟 NEW: THE SUBSCRIPTION PLAN FIELD
+  plan: {
+    type: String,
+    enum: ["Basic", "Pro", "Elite"],
+    default: "Basic"
+  },
+  
   avatarUrl: { 
     type: String, 
     default: "" 
