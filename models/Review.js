@@ -16,7 +16,11 @@ const reviewSchema = new mongoose.Schema({
     feedback: { 
         type: String, 
         trim: true 
+    },
+    isFeatured: {    
+        type: Boolean, 
+        default: false 
     }
-}, { timestamps: true }); // This automatically adds createdAt and updatedAt
+}, { timestamps: true });
 
 module.exports = mongoose.model('Review', reviewSchema);
