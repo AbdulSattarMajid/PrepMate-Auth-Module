@@ -15,12 +15,12 @@ const sendTokenResponse = (user, statusCode, res, message) => {
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
   };
 
-  res
-    .status(statusCode)
+  res.status(statusCode)
     .cookie("token", token, cookieOptions)
     .json({
       success: true,
       message,
+      token,
       user: {
         _id: user._id,
         name: user.name,
