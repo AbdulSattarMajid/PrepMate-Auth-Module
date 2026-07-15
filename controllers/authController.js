@@ -27,7 +27,6 @@ const sendTokenResponse = (user, statusCode, res, message) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        // 🌟 UPDATED: Matching our new database schema names
         avatarUrl: user.avatarUrl,
         communityPoints: user.communityPoints,
         savedPosts: user.savedPosts
@@ -56,11 +55,11 @@ exports.register = async (req, res) => {
 
       // SCENARIO B: Ghost User (Found but not verified) - Update and Resend OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      user.name = name; // Sync name in case they changed it
-      user.password = password; // Sync password
+      user.name = name; 
+      user.password = password; 
       user.otp = otp;
       user.otpExpires = Date.now() + 10 * 60 * 1000;
-      await user.save(); // Save updates to the existing record
+      await user.save(); 
 
       await sendEmail({
         email: user.email,
@@ -245,8 +244,6 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// --- 🌟 NEW CLOUDINARY & PROFILE UPDATE FUNCTION ---
-
 // @desc    Update user profile & avatar
 // @route   PUT /api/auth/profile
 exports.updateProfile = async (req, res) => {
@@ -257,18 +254,15 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Safely update text fields if the user provided them
     if (req.body.name) user.name = req.body.name;
     if (req.body.role) user.role = req.body.role;
 
-    // If Multer & Cloudinary processed an image, the secure URL will be living inside req.file.path
     if (req.file) {
       user.avatarUrl = req.file.path;
     }
 
     await user.save();
 
-    // Return the fresh data to React
     res.status(200).json({
       success: true,
       data: {
@@ -285,5 +279,62 @@ exports.updateProfile = async (req, res) => {
   } catch (error) {
     console.error("Profile Update Error:", error);
     res.status(500).json({ success: false, message: "Server Error updating profile" });
+  }
+};
+
+// 🌟 NEW: Update Password for logged-in user
+// @route   PUT /api/auth/update-password
+exports.updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    // We need to explicitly .select("+password") because we hid it in the User model by default
+    const user = await User.findById(req.user._id).select("+password");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Verify current password using your existing bcrypt method
+    if (!(await user.matchPassword(currentPassword))) {
+      return res.status(401).json({ success: false, message: "Incorrect current password." });
+    }
+
+    // Set new password (the model's pre-save middleware will hash it)
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Update Password Error:", error);
+    res.status(500).json({ success: false, message: "Failed to update password." });
+  }
+};
+
+// 🌟 NEW: Delete Own Account
+// @route   DELETE /api/auth/delete-account
+exports.deleteMyAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Optional safety check: Don't let Admins delete their account from the frontend settings
+    if (req.user.role === 'admin') {
+      return res.status(400).json({ success: false, message: "Admins cannot delete their accounts via settings." });
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    // Destroy the auth cookie since their account is gone
+    res.cookie("token", "none", {
+      expires: new Date(Date.now() + 10 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    });
+
+    res.status(200).json({ success: true, message: "Account deleted successfully." });
+  } catch (error) {
+    console.error("Delete Account Error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete account." });
   }
 };
