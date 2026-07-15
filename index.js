@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const forumRoutes = require("./routes/forumRoutes");
+const reviewRoutes = require('./routes/reviewRoutes');
 const passport = require("passport");
 const cors = require("cors");
 const errorHandler = require("./middlewares/errorMiddleware");
@@ -39,7 +40,7 @@ app.use(cors({
 app.use(passport.initialize());
 
 // --- ROUTES ---
-
+app.use('/api/reviews', reviewRoutes);
 // Mount Authentication Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/forum/posts", forumRoutes);
