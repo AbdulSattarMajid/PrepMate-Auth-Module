@@ -284,23 +284,40 @@ exports.updateProfile = async (req, res) => {
 
 // 🌟 NEW: Update Password for logged-in user
 // @route   PUT /api/auth/update-password
+// @route   PUT /api/auth/update-password
 exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
-    // We need to explicitly .select("+password") because we hid it in the User model by default
+    // Explicitly select the password field since it is hidden by default
     const user = await User.findById(req.user._id).select("+password");
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Verify current password using your existing bcrypt method
+    // 🌟 THE GOOGLE USER FIX
+    // If the user signed up with Google, they don't have a password yet.
+    if (!user.password) {
+       user.password = newPassword; // Set it for the first time
+       await user.save();
+       return res.status(200).json({ 
+         success: true, 
+         message: "Password created successfully! You can now log in with your email and password." 
+       });
+    }
+
+    // 🌟 STANDARD USER FLOW
+    // If they do have a password, they MUST provide the correct current one
+    if (!currentPassword) {
+        return res.status(400).json({ success: false, message: "Please provide your current password." });
+    }
+
     if (!(await user.matchPassword(currentPassword))) {
       return res.status(401).json({ success: false, message: "Incorrect current password." });
     }
 
-    // Set new password (the model's pre-save middleware will hash it)
+    // Set the new password
     user.password = newPassword;
     await user.save();
 
