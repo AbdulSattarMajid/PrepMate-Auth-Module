@@ -15,7 +15,8 @@ exports.createPost = async (req, res) => {
 
     const post = await Post.create(req.body);
     
-    await post.populate("author", "name avatarUrl role");
+    // 🌟 ADDED 'plan'
+    await post.populate("author", "name avatarUrl role plan");
     
     res.status(201).json({ success: true, data: post });
   } catch (error) {
@@ -42,8 +43,9 @@ exports.getPosts = async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
 
+    // 🌟 ADDED 'plan'
     let postsQuery = Post.find(query)
-      .populate("author", "name profilePicture role")
+      .populate("author", "name profilePicture role plan")
       .skip(skip)
       .limit(limit);
 
@@ -60,7 +62,8 @@ exports.getPosts = async (req, res) => {
     const maskedPosts = posts.map(post => {
       const postObj = post.toObject();
       if (postObj.isAnonymous) {
-        postObj.author = { name: "Anonymous", profilePicture: "", role: "user" };
+        // 🌟 Ensure anonymous users default to basic so badges don't leak their identity
+        postObj.author = { name: "Anonymous", profilePicture: "", role: "user", plan: "basic" };
       }
       return postObj;
     });
@@ -83,17 +86,19 @@ exports.getPosts = async (req, res) => {
 // @access  Public
 exports.getSinglePost = async (req, res) => {
   try {
+    // 🌟 ADDED 'plan'
     const post = await Post.findByIdAndUpdate(
       req.params.id, 
       { $inc: { views: 1 } }, 
       { new: true }
-    ).populate("author", "name profilePicture role");
+    ).populate("author", "name profilePicture role plan");
 
     if (!post) return res.status(404).json({ success: false, message: "Post not found" });
 
     const postObj = post.toObject();
     if (postObj.isAnonymous) {
-      postObj.author = { name: "Anonymous", profilePicture: "", role: "user" };
+      // 🌟 Added plan masking
+      postObj.author = { name: "Anonymous", profilePicture: "", role: "user", plan: "basic" };
     }
 
     res.status(200).json({ success: true, data: postObj });
@@ -118,16 +123,15 @@ exports.updatePost = async (req, res) => {
       return res.status(401).json({ success: false, message: "Not authorized to edit this post" });
     }
 
-    // 🌟 NEW: If a new image was uploaded during the edit, catch the Cloudinary URL
     if (req.file) {
       req.body.imageUrl = req.file.path;
     }
 
-    // Update the post and re-populate the author data so the frontend card doesn't break
+    // 🌟 ADDED 'plan'
     post = await Post.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
-    }).populate("author", "name avatarUrl role");
+    }).populate("author", "name avatarUrl role plan");
 
     res.status(200).json({ success: true, data: post });
   } catch (error) {
@@ -143,7 +147,6 @@ exports.deletePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, message: "Post not found" });
 
-    // 🌟 THE FIX: Allow the author OR an admin to delete it
     const isAuthor = post.author.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin';
 
@@ -151,7 +154,6 @@ exports.deletePost = async (req, res) => {
       return res.status(401).json({ success: false, message: "Not authorized to delete this post" });
     }
 
-    // Clear accompanying comments
     await Comment.deleteMany({ post: req.params.id });
     await post.deleteOne();
     
@@ -217,10 +219,11 @@ exports.toggleSavePost = async (req, res) => {
 // @access  Public
 exports.getLeaderboard = async (req, res) => {
   try {
+    // 🌟 ADDED 'plan' so top contributors show their badges in the widget!
     const topUsers = await User.find()
       .sort({ points: -1 })
       .limit(5)
-      .select("name profilePicture points role");
+      .select("name profilePicture points role plan");
 
     res.status(200).json({ success: true, data: topUsers });
   } catch (error) {
@@ -245,7 +248,8 @@ exports.addComment = async (req, res) => {
     post.commentCount += 1;
     await post.save();
 
-    await comment.populate("author", "name profilePicture role");
+    // 🌟 ADDED 'plan'
+    await comment.populate("author", "name profilePicture role plan");
     res.status(201).json({ success: true, data: comment });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -257,8 +261,9 @@ exports.addComment = async (req, res) => {
 // @access  Public
 exports.getComments = async (req, res) => {
   try {
+    // 🌟 ADDED 'plan'
     const comments = await Comment.find({ post: req.params.id })
-      .populate("author", "name profilePicture role")
+      .populate("author", "name profilePicture role plan")
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: comments.length, data: comments });
@@ -275,7 +280,6 @@ exports.deleteComment = async (req, res) => {
     const comment = await Comment.findById(req.params.commentId);
     if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
 
-    // 🌟 THE FIX: Allow the author OR an admin to delete it
     const isAuthor = comment.author.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin';
 
