@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const forumRoutes = require("./routes/forumRoutes");
 const reviewRoutes = require('./routes/reviewRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 const passport = require("passport");
 const cors = require("cors");
 const errorHandler = require("./middlewares/errorMiddleware");
@@ -59,7 +60,8 @@ app.use(cors({
 
 // 4. Passport Initialization: (session: false since we are using JWT)
 app.use(passport.initialize());
-
+// --- ROUTES ---
+app.use("/api/contact", contactRoutes);
 // --- ROUTES ---
 app.use('/api/reviews', reviewRoutes);
 // Mount Authentication Routes

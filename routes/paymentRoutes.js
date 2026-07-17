@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-// 🌟 Initialize Stripe using your secret environment variable
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const protect = require('../middlewares/authMiddleware');
 
@@ -29,7 +28,7 @@ router.post('/create-checkout-session', protect, async (req, res) => {
               name: `PrepMate ${planName} Plan`,
               description: `Upgrade to the ${planName} tier for premium features.`,
             },
-            unit_amount: price * 100, // Stripe expects CENTS
+            unit_amount: price * 100, 
           },
           quantity: 1,
         },
