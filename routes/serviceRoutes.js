@@ -2,8 +2,8 @@
 const express = require("express");
 const router = express.Router();
 
-// Adjust the paths to your middlewares based on your folder structure
-const { protect } = require("../middlewares/authMiddleware"); // Or whatever your auth middleware is named
+// ✅ FIX: Removed curly braces so the middleware imports correctly
+const protect = require("../middlewares/authMiddleware"); 
 const { chargeTokens } = require("../middlewares/tokenMiddleware");
 const { startInterview, startResumeAnalysis } = require("../controllers/serviceController");
 
@@ -12,8 +12,6 @@ const TOKEN_COSTS = {
   INTERVIEW: 20,
   RESUME: 10
 };
-
-// --- ROUTES ---
 
 // 1. Interview Route: Checks for free pass, or charges 20 tokens
 router.post(
