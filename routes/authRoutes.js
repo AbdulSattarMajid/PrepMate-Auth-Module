@@ -15,7 +15,7 @@ const {
   updateProfile,
   updatePassword,  
   deleteMyAccount,
-  claimDailyReward // 🌟 NEW: Imported claim function
+  claimDailyReward 
 } = require("../controllers/authController");
 
 const protect = require("../middlewares/authMiddleware");
@@ -32,10 +32,9 @@ router.get("/profile", protect, getProfile);
 // Catch image and send to Cloudinary
 router.put("/profile", protect, upload.single("avatar"), updateProfile);
 
-// 🌟 NEW SECURE ROUTES
 router.put("/update-password", protect, updatePassword);
 router.delete("/delete-account", protect, deleteMyAccount);
-router.post("/claim-daily", protect, claimDailyReward); // 🌟 NEW: Mount daily claim route
+router.post("/claim-daily", protect, claimDailyReward); 
 
 // --- Password Reset Routes ---
 router.post("/forgot-password", forgotPassword);
