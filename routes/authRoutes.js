@@ -103,5 +103,32 @@ router.get(
     res.redirect(redirectUrl);
   }
 );
+router.post('/deduct-tokens', protect, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid amount" });
+    }
 
+    const user = await User.findById(req.user._id);
+
+    // Make sure they don't go below zero in the database
+    if (user.tokens < amount) {
+      return res.status(400).json({ success: false, message: "Insufficient tokens" });
+    }
+
+    user.tokens -= amount;
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      tokens: user.tokens 
+    });
+
+  } catch (error) {
+    console.error("Token deduction error:", error);
+    res.status(500).json({ success: false, message: "Server error deducting tokens" });
+  }
+});
 module.exports = router;
