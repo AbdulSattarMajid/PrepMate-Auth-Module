@@ -13,13 +13,13 @@ const {
   forgotPassword, 
   resetPassword,
   updateProfile,
-  updatePassword,   // 🌟 NEW
-  deleteMyAccount   // 🌟 NEW
+  updatePassword,  
+  deleteMyAccount,
+  claimDailyReward // 🌟 NEW: Imported claim function
 } = require("../controllers/authController");
 
 const protect = require("../middlewares/authMiddleware");
 const generateToken = require("../utils/generateToken");
-
 const { upload } = require("../config/cloudinary"); 
 
 // --- Standard Auth Routes ---
@@ -35,6 +35,7 @@ router.put("/profile", protect, upload.single("avatar"), updateProfile);
 // 🌟 NEW SECURE ROUTES
 router.put("/update-password", protect, updatePassword);
 router.delete("/delete-account", protect, deleteMyAccount);
+router.post("/claim-daily", protect, claimDailyReward); // 🌟 NEW: Mount daily claim route
 
 // --- Password Reset Routes ---
 router.post("/forgot-password", forgotPassword);

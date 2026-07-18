@@ -26,10 +26,15 @@ const sendTokenResponse = (user, statusCode, res, message) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        plan: user.plan,
         isVerified: user.isVerified,
         avatarUrl: user.avatarUrl,
-        communityPoints: user.communityPoints,
-        savedPosts: user.savedPosts
+        communityPoints: user.points,
+        savedPosts: user.savedPosts,
+        tokens: user.tokens,
+        maxTokens: user.maxTokens, 
+        lastDailyRewardDate: user.lastDailyRewardDate, 
+        unlockedProfiles: user.unlockedProfiles
       },
     });
 };
@@ -55,11 +60,11 @@ exports.register = async (req, res) => {
 
       // SCENARIO B: Ghost User (Found but not verified) - Update and Resend OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      user.name = name; 
-      user.password = password; 
+      user.name = name;
+      user.password = password;
       user.otp = otp;
       user.otpExpires = Date.now() + 10 * 60 * 1000;
-      await user.save(); 
+      await user.save();
 
       await sendEmail({
         email: user.email,
@@ -113,10 +118,10 @@ exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ 
-      email, 
-      otp, 
-      otpExpires: { $gt: Date.now() } 
+    const user = await User.findOne({
+      email,
+      otp,
+      otpExpires: { $gt: Date.now() }
     });
 
     if (!user) {
@@ -143,9 +148,9 @@ exports.login = async (req, res) => {
 
     if (user && (await user.matchPassword(password))) {
       if (!user.isVerified) {
-        return res.status(403).json({ 
-          success: false, 
-          message: "Please verify your email before logging in." 
+        return res.status(403).json({
+          success: false,
+          message: "Please verify your email before logging in."
         });
       }
       sendTokenResponse(user, 200, res, "Logged in successfully");
@@ -190,7 +195,7 @@ exports.forgotPassword = async (req, res) => {
     }
 
     const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const resetOtpExpires = Date.now() + 10 * 60 * 1000; 
+    const resetOtpExpires = Date.now() + 10 * 60 * 1000;
 
     user.otp = resetOtp;
     user.otpExpires = resetOtpExpires;
@@ -232,9 +237,9 @@ exports.resetPassword = async (req, res) => {
     }
 
     user.password = newPassword;
-    user.otp = undefined; 
+    user.otp = undefined;
     user.otpExpires = undefined;
-    user.isVerified = true; 
+    user.isVerified = true;
 
     await user.save();
 
@@ -249,7 +254,7 @@ exports.resetPassword = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    
+
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -288,7 +293,7 @@ exports.updateProfile = async (req, res) => {
 exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    
+
     // Explicitly select the password field since it is hidden by default
     const user = await User.findById(req.user._id).select("+password");
 
@@ -299,18 +304,18 @@ exports.updatePassword = async (req, res) => {
     // 🌟 THE GOOGLE USER FIX
     // If the user signed up with Google, they don't have a password yet.
     if (!user.password) {
-       user.password = newPassword; // Set it for the first time
-       await user.save();
-       return res.status(200).json({ 
-         success: true, 
-         message: "Password created successfully! You can now log in with your email and password." 
-       });
+      user.password = newPassword; // Set it for the first time
+      await user.save();
+      return res.status(200).json({
+        success: true,
+        message: "Password created successfully! You can now log in with your email and password."
+      });
     }
 
     // 🌟 STANDARD USER FLOW
     // If they do have a password, they MUST provide the correct current one
     if (!currentPassword) {
-        return res.status(400).json({ success: false, message: "Please provide your current password." });
+      return res.status(400).json({ success: false, message: "Please provide your current password." });
     }
 
     if (!(await user.matchPassword(currentPassword))) {
@@ -353,5 +358,66 @@ exports.deleteMyAccount = async (req, res) => {
   } catch (error) {
     console.error("Delete Account Error:", error);
     res.status(500).json({ success: false, message: "Failed to delete account." });
+  }
+};
+
+// @route   POST /api/auth/claim-daily
+exports.claimDailyReward = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Define reward amounts based on plan (can also import from tokenEconomy.js later)
+    let dailyReward = 20; // Basic
+    if (user.plan === "Pro") dailyReward = 30;
+    if (user.plan === "Elite") dailyReward = 50;
+
+    // Check if they have already claimed today
+    const now = new Date();
+    if (user.lastDailyRewardDate) {
+      const lastClaim = new Date(user.lastDailyRewardDate);
+      const isSameDay = 
+        lastClaim.getFullYear() === now.getFullYear() &&
+        lastClaim.getMonth() === now.getMonth() &&
+        lastClaim.getDate() === now.getDate();
+
+      if (isSameDay) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "You have already claimed your daily reward today. Come back tomorrow!" 
+        });
+      }
+    }
+
+    // Check Token Cap before adding
+    if (user.tokens >= user.maxTokens) {
+      return res.status(400).json({
+        success: false,
+        message: `You are at your token cap (${user.maxTokens}). Spend some tokens to claim more!`
+      });
+    }
+
+    const availableSpace = user.maxTokens - user.tokens;
+    const tokensToAdd = Math.min(dailyReward, availableSpace);
+
+    user.tokens += tokensToAdd;
+    user.lastDailyRewardDate = now;
+    
+    await user.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Successfully claimed ${tokensToAdd} tokens!`,
+      tokens: user.tokens,
+      maxTokens: user.maxTokens,
+      lastDailyRewardDate: user.lastDailyRewardDate
+    });
+
+  } catch (error) {
+    console.error("Daily Reward Error:", error);
+    res.status(500).json({ success: false, message: "Failed to claim daily reward." });
   }
 };

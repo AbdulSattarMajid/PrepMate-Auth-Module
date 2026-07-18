@@ -13,31 +13,40 @@ const userSchema = new mongoose.Schema({
     default: "candidate" 
   },
   
-  // 🌟 NEW: THE SUBSCRIPTION PLAN FIELD
   plan: {
     type: String,
     enum: ["Basic", "Pro", "Elite"],
     default: "Basic"
   },
   
-  avatarUrl: { 
-    type: String, 
-    default: "" 
-  },
-  points: { 
-    type: Number, 
-    default: 0 
-  },
+  avatarUrl: { type: String, default: "" },
+  points: { type: Number, default: 0 },
+  
   savedPosts: [{
     type: mongoose.Schema.ObjectId,
     ref: "Post"
   }],
 
-  // --- OTP & VERIFICATION ---
-  isVerified: { 
-    type: Boolean, 
-    default: false 
+  // 🌟 NEW: UNIFIED TOKEN ECONOMY
+  tokens: { 
+    type: Number, 
+    default: 100 // New users get 100 on signup
   },
+  maxTokens: {
+    type: Number,
+    default: 200 // Basic plan cap limits hoarding
+  },
+  lastDailyRewardDate: {
+    type: Date,
+    default: null
+  },
+  unlockedProfiles: [{
+    type: mongoose.Schema.ObjectId,
+    ref: "User"
+  }],
+
+  // --- OTP & VERIFICATION ---
+  isVerified: { type: Boolean, default: false },
   otp: { type: String },
   otpExpires: { type: Date },
 
