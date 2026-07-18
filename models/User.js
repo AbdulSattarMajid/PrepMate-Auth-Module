@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   
   plan: {
     type: String,
-    enum: ["Basic", "Pro", "Elite"],
+    enum: ["Basic", "Pro", "Elite", "Recruiter"],
     default: "Basic"
   },
   
@@ -62,7 +62,7 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // --- MIDDLEWARE HOOKS ---
-userSchema.pre("save", async function () {
+userSchema.pre("save", async function (next) {
   // 1. Admin Assignment
   if (this.email === "prepmate.services@gmail.com") {
     this.role = "admin";
@@ -72,16 +72,18 @@ userSchema.pre("save", async function () {
   // This runs when a new user registers OR when an existing user's plan changes
   if (this.isModified("plan") || this.isNew) {
     if (this.plan === "Basic") this.maxTokens = 200;
-    if (this.plan === "Pro") this.maxTokens = 500;    // Adjust these caps as needed
+    if (this.plan === "Pro") this.maxTokens = 500;    
     if (this.plan === "Elite") this.maxTokens = 1000;
+    if (this.plan === "Recruiter") this.maxTokens = 10000; // Recruiter cap added
   }
 
   // 3. Password Hashing
-  // If password wasn't changed, skip hashing to prevent re-hashing an already hashed password
-  if (!this.isModified("password") || !this.password) return;
+  // If password wasn't changed, skip hashing to prevent re-hashing
+  if (!this.isModified("password") || !this.password) return next();
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // --- INSTANCE METHODS ---
