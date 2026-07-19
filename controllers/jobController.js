@@ -41,3 +41,24 @@ exports.getJobs = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error while fetching jobs" });
   }
 };
+exports.deleteJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    // Security check: Make sure the user deleting the job is the one who created it
+    if (job.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ success: false, message: 'Not authorized to delete this job' });
+    }
+
+    await job.deleteOne();
+
+    res.status(200).json({ success: true, message: 'Job removed successfully', data: {} });
+  } catch (error) {
+    console.error("Delete Job Error:", error);
+    res.status(500).json({ success: false, message: "Server error while deleting job" });
+  }
+};
