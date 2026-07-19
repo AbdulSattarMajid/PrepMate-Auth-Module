@@ -8,6 +8,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const recruiterRoutes = require("./routes/recruiterRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
+const jobRoutes = require('./routes/jobRoutes');
 const passport = require("passport");
 const cors = require("cors");
 const errorHandler = require("./middlewares/errorMiddleware");
@@ -66,6 +67,7 @@ app.use(passport.initialize());
 app.use("/api/services", serviceRoutes);
 app.use("/api/recruiter", recruiterRoutes);
 app.use("/api/contact", contactRoutes);
+app.use('/api/jobs', jobRoutes);
 // --- ROUTES ---
 app.use('/api/reviews', reviewRoutes);
 // Mount Authentication Routes
