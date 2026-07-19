@@ -1,13 +1,9 @@
 const Job = require('../models/Job');
 
-// @desc    Create a new job posting
-// @route   POST /api/jobs
-// @access  Private (Recruiters/HR)
 exports.createJob = async (req, res) => {
   try {
     const { title, company, location, type, experience, skills } = req.body;
 
-    // Ensure the user exists in the request (requires auth middleware)
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
@@ -19,7 +15,7 @@ exports.createJob = async (req, res) => {
       type,
       experience,
       skills,
-      postedBy: req.user._id // Assumes your auth middleware attaches the user object to req
+      postedBy: req.user._id 
     });
 
     res.status(201).json({ success: true, data: newJob });
